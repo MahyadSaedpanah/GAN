@@ -35,13 +35,10 @@ def train():
             real_images = real_images.to(device)
             batch_size = real_images.size(0)
 
-            # Label smoothing for real labels
-            valid = torch.full((batch_size, 1), 0.9, device=device)  # real label = 0.9
+            # Label smoothing
+            valid = torch.full((batch_size, 1), 0.9, device=device)
             fake = torch.zeros(batch_size, 1, device=device)
 
-            # ---------------------
-            #  Train Generator
-            # ---------------------
             z = torch.randn(batch_size, config["latent_dim"], device=device)
             gen_images = generator(z)
 
@@ -51,10 +48,7 @@ def train():
             g_loss.backward()
             optimizer_G.step()
 
-            # ---------------------
-            #  Train Discriminator
-            # ---------------------
-            # Inject Gaussian noise into inputs
+            # Gaussian noise
             noisy_real = real_images + 0.05 * torch.randn_like(real_images)
             noisy_fake = gen_images.detach() + 0.05 * torch.randn_like(gen_images.detach())
 
@@ -67,7 +61,6 @@ def train():
             optimizer_D.step()
 
         print(f"[Epoch {epoch}/{config['epochs']}] D loss: {d_loss.item():.4f}, G loss: {g_loss.item():.4f}")
-
         g_losses.append(g_loss.item())
         d_losses.append(d_loss.item())
 
@@ -84,12 +77,19 @@ def train():
             torch.save(generator.state_dict(), f"outputs/generator_epoch_{epoch}.pth")
             torch.save(discriminator.state_dict(), f"outputs/discriminator_epoch_{epoch}.pth")
 
-            plt.figure(figsize=(10, 5))
-            plt.plot(g_losses, label="Generator Loss")
-            plt.plot(d_losses, label="Discriminator Loss")
-            plt.xlabel("Epoch")
-            plt.ylabel("Loss")
+            # رسم بازه‌ای دقیق‌تر
+            epoch_range_map = {1: (0, 1), 25: (0, 25), 50: (25, 50), 100: (50, 100)}
+            start, end = epoch_range_map[epoch]
+            x_range = list(range(start + 1, end + 1))
+
+            plt.figure(figsize=(10, 6))
+            plt.plot(x_range, g_losses[start:end], label="Generator Loss", color="blue", linestyle='--', marker='o')
+            plt.plot(x_range, d_losses[start:end], label="Discriminator Loss", color="red", linestyle='-', marker='x')
+            plt.xlabel("Epoch", fontsize=12)
+            plt.ylabel("Loss", fontsize=12)
+            plt.title(f"Loss from Epoch {start + 1} to {end}", fontsize=14)
             plt.legend()
-            plt.title("Loss During Training")
+            plt.grid(True, linestyle='--', alpha=0.6)
+            plt.tight_layout()
             plt.savefig(f"outputs/loss_plot_epoch_{epoch}.png")
             plt.close()
