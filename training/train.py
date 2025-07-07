@@ -60,7 +60,7 @@ def train():
         g_losses.append(g_loss.item())
         d_losses.append(d_loss.item())
 
-        if epoch % config["save_interval"] == 0 or epoch == config["epochs"]:
+        if epoch in [1, 25, 50, 100]:
             with torch.no_grad():
                 z = torch.randn(64, config["latent_dim"], device=device)
                 gen_samples = generator(z)
