@@ -4,6 +4,7 @@ from torch import nn, optim
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
+import os
 
 from training.utils import save_generated_images, save_image_grid
 from models.generator import Generator
@@ -12,6 +13,7 @@ from config import config
 
 def train():
     device = config["device"]
+    os.makedirs("outputs", exist_ok=True)
 
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -35,7 +37,6 @@ def train():
             real_images = real_images.to(device)
             batch_size = real_images.size(0)
 
-            # Label smoothing
             valid = torch.full((batch_size, 1), 0.9, device=device)
             fake = torch.zeros(batch_size, 1, device=device)
 
@@ -48,7 +49,6 @@ def train():
             g_loss.backward()
             optimizer_G.step()
 
-            # Gaussian noise
             noisy_real = real_images + 0.05 * torch.randn_like(real_images)
             noisy_fake = gen_images.detach() + 0.05 * torch.randn_like(gen_images.detach())
 
@@ -77,7 +77,6 @@ def train():
             torch.save(generator.state_dict(), f"outputs/generator_epoch_{epoch}.pth")
             torch.save(discriminator.state_dict(), f"outputs/discriminator_epoch_{epoch}.pth")
 
-            # رسم بازه‌ای دقیق‌تر
             epoch_range_map = {1: (0, 1), 25: (0, 25), 50: (25, 50), 100: (50, 100)}
             start, end = epoch_range_map[epoch]
             x_range = list(range(start + 1, end + 1))
@@ -93,3 +92,35 @@ def train():
             plt.tight_layout()
             plt.savefig(f"outputs/loss_plot_epoch_{epoch}.png")
             plt.close()
+
+    # نمودار نهایی کلی
+    plt.figure(figsize=(12, 6))
+    plt.plot(range(1, len(g_losses) + 1), g_losses, label="Generator Loss", color="blue")
+    plt.plot(range(1, len(d_losses) + 1), d_losses, label="Discriminator Loss", color="red")
+    for mark in [25, 50, 100]:
+        plt.axvline(x=mark, color='gray', linestyle='--', alpha=0.5)
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title("Overall Loss During Training")
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.tight_layout()
+    plt.savefig("outputs/loss_plot_overall.png")
+    plt.close()
+
+    # گزارش متنی میانگین
+    report = []
+    ranges = [(0, 25), (25, 50), (50, 100)]
+    for i, (start, end) in enumerate(ranges):
+        avg_g = sum(g_losses[start:end]) / (end - start)
+        avg_d = sum(d_losses[start:end]) / (end - start)
+        report.append(f"""
+        Epochs {start+1}–{end}:
+            Generator Loss: {avg_g:.4f}
+            Discriminator Loss: {avg_d:.4f}
+        """)
+
+
+    with open("outputs/loss_report.txt", "w") as f:
+        f.write("Loss Averages per Epoch Range\n===============================\n\n")
+        f.writelines(report)
