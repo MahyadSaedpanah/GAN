@@ -1,3 +1,4 @@
+
 import torch
 from torch import nn, optim
 from torchvision import datasets, transforms
@@ -34,21 +35,31 @@ def train():
             real_images = real_images.to(device)
             batch_size = real_images.size(0)
 
-            valid = torch.ones(batch_size, 1, device=device)
+            # Label smoothing for real labels
+            valid = torch.full((batch_size, 1), 0.9, device=device)  # real label = 0.9
             fake = torch.zeros(batch_size, 1, device=device)
 
-            # Generator
+            # ---------------------
+            #  Train Generator
+            # ---------------------
             z = torch.randn(batch_size, config["latent_dim"], device=device)
             gen_images = generator(z)
+
             g_loss = criterion(discriminator(gen_images), valid)
 
             optimizer_G.zero_grad()
             g_loss.backward()
             optimizer_G.step()
 
-            # Discriminator
-            real_loss = criterion(discriminator(real_images), valid)
-            fake_loss = criterion(discriminator(gen_images.detach()), fake)
+            # ---------------------
+            #  Train Discriminator
+            # ---------------------
+            # Inject Gaussian noise into inputs
+            noisy_real = real_images + 0.05 * torch.randn_like(real_images)
+            noisy_fake = gen_images.detach() + 0.05 * torch.randn_like(gen_images.detach())
+
+            real_loss = criterion(discriminator(noisy_real), valid)
+            fake_loss = criterion(discriminator(noisy_fake), fake)
             d_loss = (real_loss + fake_loss) / 2
 
             optimizer_D.zero_grad()
@@ -66,16 +77,13 @@ def train():
                 gen_samples = generator(z)
                 save_generated_images(gen_samples, epoch)
 
-                # ذخیره تصاویر برای FID/IS
                 z = torch.randn(100, config["latent_dim"], device=device)
                 fake_images = generator(z)
                 save_image_grid(fake_images, folder=f"outputs/fake/epoch_{epoch}", prefix="fake")
 
-            # ذخیره مدل‌ها
             torch.save(generator.state_dict(), f"outputs/generator_epoch_{epoch}.pth")
             torch.save(discriminator.state_dict(), f"outputs/discriminator_epoch_{epoch}.pth")
 
-            # نمودار loss
             plt.figure(figsize=(10, 5))
             plt.plot(g_losses, label="Generator Loss")
             plt.plot(d_losses, label="Discriminator Loss")
