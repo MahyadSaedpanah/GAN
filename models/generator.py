@@ -14,7 +14,7 @@ class Generator(nn.Module):
             nn.ConvTranspose2d(64, 32, 4, 2, 1),   # 28x28
             nn.BatchNorm2d(32),
             nn.ReLU(True),
-            nn.ConvTranspose2d(32, 1, 3, 1, 1),
+            nn.ConvTranspose2d(32, 1, 4, 1, 1),
             nn.Tanh()
         )
 
