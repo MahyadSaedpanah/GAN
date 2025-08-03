@@ -15,15 +15,9 @@ def save_generated_images(samples, epoch, output_dir="outputs/samples"):
 def save_image_grid(images, folder, prefix):
     os.makedirs(folder, exist_ok=True)
     for i, img in enumerate(images):
-        img = (img + 1) / 2  # Unnormalize from [-1, 1] → [0, 1]
-        
-        # تبدیل تصویر 1 کاناله → 3 کاناله برای FID/IS
-        if img.size(0) == 1:
-            img = img.repeat(3, 1, 1)
-
+        img = (img + 1) / 2
         img = transforms.ToPILImage()(img.cpu())
         img.save(os.path.join(folder, f"{prefix}_{i}.png"))
-
 
 def save_real_images(num_samples=100, folder="outputs/real"):
     transform = transforms.Compose([
@@ -33,11 +27,7 @@ def save_real_images(num_samples=100, folder="outputs/real"):
     dataset = MNIST(root="data", train=True, transform=transform, download=True)
     loader = DataLoader(dataset, batch_size=num_samples, shuffle=True)
     real_imgs, _ = next(iter(loader))
-    
-    # تبدیل تمام تصاویر به RGB قبل از ذخیره
-    real_imgs_rgb = real_imgs.repeat(1, 3, 1, 1)  # (B, 1, H, W) → (B, 3, H, W)
-    save_image_grid(real_imgs_rgb[:num_samples], folder, "real")
-
+    save_image_grid(real_imgs[:num_samples], folder, "real")
 
 def calculate_fid_is(real_dir, fake_dir, device="cuda"):
     metrics = calculate_metrics(

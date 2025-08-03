@@ -126,21 +126,6 @@ def train():
         f.writelines(report)
 
 
-    print("\nGenerating 5000 images for final evaluation...")
-
-    z = torch.randn(5000, config["latent_dim"], device=device)
-    generator.eval()
-    with torch.no_grad():
-        fake_imgs = generator(z)
-
-    eval_output_dir = "outputs/fake/epoch_100_large"
-    os.makedirs(eval_output_dir, exist_ok=True)
-    for i in range(5000):
-        img = (fake_imgs[i] + 1) / 2
-        img = img.repeat(3, 1, 1)  # تبدیل به RGB
-        img = transforms.ToPILImage()(img.cpu())
-        img.save(os.path.join(eval_output_dir, f"fake_{i}.png"))
-
-
+    
 
     
