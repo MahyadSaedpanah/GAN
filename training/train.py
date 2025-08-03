@@ -93,7 +93,6 @@ def train():
             plt.savefig(f"outputs/loss_plot_epoch_{epoch}.png")
             plt.close()
 
-    # نمودار نهایی کلی
     plt.figure(figsize=(12, 6))
     plt.plot(range(1, len(g_losses) + 1), g_losses, label="Generator Loss", color="blue")
     plt.plot(range(1, len(d_losses) + 1), d_losses, label="Discriminator Loss", color="red")
@@ -108,7 +107,6 @@ def train():
     plt.savefig("outputs/loss_plot_overall.png")
     plt.close()
 
-    # گزارش متنی میانگین
     report = []
     ranges = [(0, 25), (25, 50), (50, 100)]
     for i, (start, end) in enumerate(ranges):
